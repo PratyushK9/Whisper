@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Send, Sparkles } from 'lucide-react';
+import { Send, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -8,15 +8,15 @@ import confetti from 'canvas-confetti';
 
 const topics = [
   "First Love Stories 💕",
-  "College Life Secrets 🎓",
-  "Family Drama 👨‍👩‍👧‍👦",
+  "College Life 🎓",
   "Friendship Tales 👥",
-  "Career Struggles 💼",
+  "Career Journey 💼",
   "Personal Growth 🌱",
-  "Mental Health 🧠",
-  "Social Media Reality 📱",
   "Life Goals & Dreams ⭐",
-  "Relationship Advice ❤️"
+  "Random Thoughts 💭",
+  "Funny Moments 😄",
+  "Travel Stories 🌍",
+  "Creative Ideas 💡"
 ];
 
 const RATE_LIMIT_DURATION = 60000;
@@ -69,6 +69,7 @@ export const ConfessionBox = () => {
   const [title, setTitle] = useState('');
   const [confession, setConfession] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTopics, setShowTopics] = useState(false);
   const { ErrorBoundary } = useErrorBoundary();
   const [lastSubmissions, setLastSubmissions] = useState<number[]>([]);
 
@@ -114,6 +115,11 @@ export const ConfessionBox = () => {
     }
   };
 
+  const handleTopicSelect = (topic: string) => {
+    setConfession(prev => `${prev ? prev + '\n\n' : ''}${topic}\n`);
+    setShowTopics(false);
+  };
+
   return (
     <ErrorBoundary>
       <motion.div 
@@ -144,46 +150,59 @@ export const ConfessionBox = () => {
               value={confession}
               onChange={(e) => setConfession(e.target.value)}
               className="w-full h-40 p-4 text-gray-700 bg-gray-50 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-              placeholder="Type your confession here... It's completely anonymous!"
+              placeholder="Type your confession here..."
               maxLength={1000}
             />
           </div>
 
-          <div className="flex justify-between items-center">
-            <button
-              type="submit"
-              disabled={isSubmitting || !confession.trim() || !title.trim()}
-              className="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <Send className="w-5 h-5 mr-2" />
-              Share Anonymously
-            </button>
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTopics(!showTopics)}
+                className="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-between gap-2"
+              >
+                <span>Topic Ideas</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showTopics ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showTopics && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute z-10 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-100 py-2 max-h-64 overflow-y-auto"
+                >
+                  {topics.map((topic) => (
+                    <button
+                      key={topic}
+                      type="button"
+                      onClick={() => handleTopicSelect(topic)}
+                      className="w-full px-4 py-2 text-left hover:bg-purple-50 text-gray-700 hover:text-purple-700 transition-colors"
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </div>
 
-            <div className="flex items-center text-sm text-gray-500">
-              <Sparkles className="w-4 h-4 mr-1" />
-              {confession.length}/1000
+            <div className="flex items-center justify-between gap-4 flex-1">
+              <button
+                type="submit"
+                disabled={isSubmitting || !confession.trim() || !title.trim()}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Send className="w-5 h-5 mr-2" />
+                Share
+              </button>
+              
+              <div className="text-sm text-gray-500">
+                {confession.length}/1000
+              </div>
             </div>
           </div>
         </form>
-
-        <div className="mt-8">
-          <h3 className="text-lg font-medium text-gray-700 mb-3">
-            Need inspiration? Try these topics:
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {topics.map((topic) => (
-              <motion.button
-                key={topic}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-purple-100 hover:text-purple-700 transition-all"
-                onClick={() => setConfession(prev => `${prev ? prev + '\n\n' : ''}Topic: ${topic}\n`)}
-              >
-                {topic}
-              </motion.button>
-            ))}
-          </div>
-        </div>
       </motion.div>
     </ErrorBoundary>
   );

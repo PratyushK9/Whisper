@@ -42,37 +42,7 @@ function App() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
-          {[
-            {
-              icon: Shield,
-              title: "100% Anonymous",
-              description: "No login required. No data tracked. Your secret stays secret."
-            },
-            {
-              icon: Heart,
-              title: "Safe Space",
-              description: "Express yourself freely without judgment or consequences."
-            },
-            {
-              icon: Eye,
-              title: "Private & Secure",
-              description: "Your confessions are encrypted and protected."
-            }
-          ].map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.2 }}
-              className="bg-white rounded-xl p-6 text-center shadow-lg"
-            >
-              <feature.icon className="w-12 h-12 mx-auto mb-4 text-purple-600" />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
-            </motion.div>
-          ))}
-        </div>
+        
 
         <div className="max-w-4xl mx-auto grid gap-12">
           <ConfessionBox />
