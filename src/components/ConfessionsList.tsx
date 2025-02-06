@@ -4,6 +4,7 @@ import { MessageCircle, ThumbsUp, Clock, RefreshCcw, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { useErrorBoundary } from '../hooks/useErrorBoundary';
+import { CommentSection } from './CommentSection';
 
 type Confession = {
   id: string;
@@ -23,6 +24,7 @@ const CLIENT_ID = Math.random().toString(36).substring(2) + Date.now().toString(
 export const ConfessionsList = () => {
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [likedConfessions, setLikedConfessions] = useState<Set<string>>(new Set());
@@ -34,12 +36,17 @@ export const ConfessionsList = () => {
 
   const fetchConfessions = useCallback(async (pageNumber: number, force: boolean = false) => {
     const now = Date.now();
-    if (!force && now - lastFetch < CACHE_DURATION) {
+    if (!force && now - lastFetch < CACHE_DURATION && pageNumber === 0) {
       return;
     }
 
     try {
-      setRefreshing(true);
+      if (pageNumber === 0) {
+        setRefreshing(true);
+      } else {
+        setLoadingMore(true);
+      }
+
       const from = pageNumber * CONFESSIONS_PER_PAGE;
       const to = from + CONFESSIONS_PER_PAGE - 1;
 
@@ -71,8 +78,15 @@ export const ConfessionsList = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   }, [lastFetch, sortBy]);
+
+  const handleLoadMore = async () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchConfessions(nextPage);
+  };
 
   const handleToggleLike = async (confessionId: string) => {
     try {
@@ -118,6 +132,7 @@ export const ConfessionsList = () => {
   };
 
   const handleRefresh = async () => {
+    setPage(0);
     await fetchConfessions(0, true);
   };
 
@@ -127,7 +142,7 @@ export const ConfessionsList = () => {
   }, [sortBy]);
 
   useEffect(() => {
-    fetchConfessions(page);
+    fetchConfessions(0);
     
     const savedLikes = localStorage.getItem('likedConfessions');
     if (savedLikes) {
@@ -158,7 +173,7 @@ export const ConfessionsList = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [page]);
+  }, []);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -257,7 +272,6 @@ export const ConfessionsList = () => {
           </AnimatePresence>
         </div>
 
-        {/* Modal for full confession view */}
         <AnimatePresence>
           {selectedConfession && (
             <motion.div
@@ -275,7 +289,7 @@ export const ConfessionsList = () => {
                 className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-6 flex flex-col h-full">
+                <div className="p-6 flex flex-col h-full max-h-[90vh]">
                   <div className="flex justify-between items-start mb-4">
                     <h2 className="text-2xl font-bold text-gray-800 pr-8">{selectedConfession.title}</h2>
                     <button
@@ -286,8 +300,12 @@ export const ConfessionsList = () => {
                     </button>
                   </div>
                   
-                  <div className="flex-grow overflow-y-auto">
-                    <p className="text-gray-700 whitespace-pre-wrap text-lg">{selectedConfession.content}</p>
+                  <div className="flex-grow overflow-y-auto custom-scrollbar">
+                    <p className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">
+                      {selectedConfession.content}
+                    </p>
+                    
+                    <CommentSection confessionId={selectedConfession.id} />
                   </div>
                   
                   <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
@@ -321,10 +339,18 @@ export const ConfessionsList = () => {
         {hasMore && (
           <div className="flex justify-center mt-8">
             <button
-              onClick={() => setPage(prev => prev + 1)}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
-              Load More
+              {loadingMore ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <span>Load More</span>
+              )}
             </button>
           </div>
         )}
